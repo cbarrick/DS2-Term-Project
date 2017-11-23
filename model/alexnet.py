@@ -45,12 +45,15 @@ class AlexNet(N.Module):
         logger.debug("Loss function:{} Optimizer:{}".format(self.lossfn,self.optimizer))
 
     def forward(self, x):
+        print(x.shape())
         x = self.features(x)
         x = x.view(x.size(0), 256 * 6 * 6)
         x = self.classifier(x)
         return x
 
     def partial_fit(self,X,y):
+        X=A.Variable(X)
+        y=A.Variable(y)
         out=self.forward(X)
         loss=self.lossfn(out,y)
         logger.info("Loss: {}".format(loss.data[0]))
