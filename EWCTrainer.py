@@ -10,6 +10,7 @@ import numpy
 
 
 from datasets.nuclei import NucleiLoader
+from datasets.epi import EpitheliumLoader 
 logger=logging.getLogger(__name__)
 
 parser=argparse.ArgumentParser()
@@ -31,9 +32,8 @@ torch.manual_seed(1234)
 
 class EWCTrainer:
 
-    def __init__(self,classes,sample_data,batch_size=100):
+    def __init__(self,classes,batch_size=100):
 
-        self.sample_data = sample_data
         self.batch_size = batch_size
         self.model = alexnet.AlexNet(classes);
 
@@ -52,43 +52,47 @@ class EWCTrainer:
             i+=self.batch_size
 
 
-    def get_accuracy(self,output,label):
-        total=output.shape[0]
-        correct=output[output==label].shape[0]
-        accuracy=correct/total
-        logger.info("Accuracy: {}".format(accuracy))
-        return accuracy
 
-    def train_on_task(self,name,batch_generator,EPOCHS=EPOCHS):
+
+    def train_on_task(self,name,train_x,train_y,EPOCHS=EPOCHS):
         logger.info("Training task {}".format(name))
-        for i in range(EPOCHS):
-            train_x,train_y=next(batch_generator)
-            train_x = train_x
-            train_x = train_x.permute(0, 3, 1,2)
-            #train_x=numpy.repeat(train_x[:,:,:,numpy.newaxis],3,axis=3)
-            print(train_x.shape)
-            print(train_y.shape)
-            self.model.partial_fit(train_x,train_y)
-            if i==EPOCHS-1:
-                logger.info("Accuracy on {}: {}".format(name,get_accuracy(model.predict(train_x),train_y)))
+        train_x = train_x.permute(0, 3, 1,2)
+        loss=self.model.partial_fit(train_x,train_y)
+        logger.debug("loss: {}".format(loss))
         return train_x,train_y
 
-    def partial_fit(self,data_x1,data_y1,data_x2,data_y2):
-        first_data=self.train_on_task("MNIST",self.batchify(data_x1,data_y1))
-        if args.ewc:
-            self.model.consolidate(numpy.transpose(self.sample_data[0][:,:,:,numpy.newaxis],(0,3,1,2)),self.sample_data[1])
-        second_data=self.train_on_task("FASHION",self.batchify(data_x2,data_y2))
-        logger.info("Task B is trained. Now computing accuracy for task A to check forgetting.")
-        woc=self.get_accuracy(self.model.predict(first_data[0]),second_data[1])
-        return woc;
+    def train_on_task_consolidate(self,name,train_x,train_y,EPOCHS=EPOCHS):
+        logger.info("Training task {}".format(name))
+        train_x = train_x.permute(0, 3, 1,2)
+        self.model.consolidate(train_x,train_y)
 
-data = NucleiLoader();
-model = None;
-for x, y in data.load_train(0,batch_size=100):
+    def predict(self,test_x):
+        test_x = test_x.permute(0, 3, 1,2)
+        return  self.model.predict(test_x)
 
-    if  model is  None:
-        sample_data= x,y
-        model = EWCTrainer(2,sample_data)
-    model.partial_fit(x,y,x,y)
+    def partial_fit(self,data_x1,data_y1):
+        first_data=self.train_on_task("MNIST",data_x1,data_y1)
+        logger.info("Task is trained ")
+        #woc=self.get_accuracy(self.model.predict(first_data[0]),data_y1)
+
+data_nuclei = NucleiLoader();
+trainer = EWCTrainer(2)
+
+for x, y in data_nuclei.load_train(0,batch_size=100):
+    print("on main  funcition")
+    print(x.shape)
+    print(y.shape)
+    sample_data = x.clone(),y.clone()
+    trainer.train_on_task("MNIST",x,y)
+    break;
+
+
+trainer.train_on_task_consolidate("MNIST",sample_data[0],sample_data[1])
+
+for x, y in data_nuclei.load_train(0,batch_size=100):
+    trainer.train_on_task("Task2",x,y)
+
+
+
 
 
