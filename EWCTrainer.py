@@ -76,7 +76,8 @@ class EWCTrainer:
         logger.info("Task is trained ")
         #woc=self.get_accuracy(self.model.predict(first_data[0]),data_y1)
 
-data_nuclei = NucleiLoader();
+data_nuclei = NucleiLoader()
+data_epi= EpitheliumLoader()
 trainer = EWCTrainer(2)
 
 y1 = list();
@@ -103,7 +104,7 @@ trainer = EWCTrainer(2)
 
 
 for i in range(0,EPOCHS):
-    for x, y in data_nuclei.load_train(0,batch_size=100):
+    for x, y in data_epi.load_train(0,batch_size=100):
         trainer.train_on_task("Task1 -AD HOC TASK",x,y)
         sample_data = x.clone(),y.clone()
         
@@ -123,7 +124,7 @@ print("recording prediction of EWC Testing task")
 
 for x,y in data_nuclei.load_test(0,batch_size=100):
     y2.extend(trainer.predict(x.clone()))
-    print(y2)
+
   
 
 s = Score();
