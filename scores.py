@@ -19,18 +19,14 @@ class Score:
 
 
 	def accuracy_score(self,y1,y2,y_orig):
-		
+
 		return ["Accuracy Score",metrics.accuracy_score(y_orig,y1),metrics.accuracy_score(y_orig,y2)]
 
 
-	def auc(self,y1,y2,y_orig):
+	def hamming_loss(self,y1,y2,y_orig):
 		
-		return ["MSE",metrics.auc(y_orig,y1),metrics.auc(y_orig,y2)]
+		return ["Hamming Loss",metrics.hamming_loss(y_orig,y1),metrics.hamming_loss(y_orig,y2)]
 
-
-	def average_percision_score(self,y1,x2,y_orig):
-		
-		return ["Average Percision Score",metrics.average_precision_score(y_orig,y1),metrics.average_precision_score(y_orig,y2)]
 
 	def classificaiton_report(self,y1,y2,y_orig):
 
@@ -61,32 +57,49 @@ class Score:
 		return [metrics.roc_curve(y_orig,y1),metrics.roc_curve(y_orig,y2)]
 	
 
+	def plot_roc(self,y_orig,y1,y2):
+		roc_score = s.roc_curve(y_orig,y1,y2)
+		plt.clf();
+		plt.cla();
+		plt.plot(roc_score[0][0],roc_score[0][1])
+		plt.savefig("roc_task1.jpg")
+		plt.clf();
+		plt.cla();
+		plt.plot(roc_score[1][0],roc_score[1][1])
+		plt.savefig("roc_task2.jpg")
+	def plot_loss(self,loss_1,loss_2):
+		index = [i for i in range(0,len(loss_1))]
+		plt.clf();
+		plt.cla();
+		plt.plot(index,loss_1)
+		plt.savefig("loss_task1.jpg")
+		plt.clf();
+		plt.cla();
+		plt.plot(index,loss_2)
+		plt.savefig("loss_task2.jpg")
+
+
 
 	def build_table(self,y1,y2,y_orig):
 		table_data = list();
 		table_data.append(self.accuracy_score(y1,y2,y_orig))
-		#table_data.append(self.auc(y1,y2,y_orig))
-		table_data.append(self.average_percision_score(y1,y2,y_orig))
+		table_data.append(self.hamming_loss(y1,y2,y_orig))
 		table_data.append(self.jaccordian_similarity(y1,y2,y_orig))
 		table_data.append(self.log_loss(y1,y2,y_orig))
 		table_data.append(self.f1_score(y1,y2,y_orig))
-		table_data.append(self.average_percision_score(y1,y2,y_orig))
 		table_data.append(self.recall_score(y1,y2,y_orig))
-		table_data.append(self.roc_auc_score(y1,y2,y_orig))
+		#table_data.append(self.roc_auc_score(y1,y2,y_orig))
 
 		return tabulate(table_data,headers=["Accuracy Metric Name","Task_1","Task_2"])
 
+"""
 y_orig= np.random.randint(2, size=10)
 y1= np.random.randint(2, size=10)
 y2= np.random.randint(2, size=10)
 s = Score();
 print("<---------------------------SCORE METRICS ----------------------------------------------------->")
 print(s.build_table(y_orig,y1,y2));
-print("<----Score Metrics End -------------")
-roc_score = s.roc_curve(y_orig,y1,y2)
-plt.plot(roc_score[0][0],roc_score[0][1])
-plt.savefig("roc_task1.jpg")
-plt.clf();
-plt.cla();
-plt.plot(roc_score[1][0],roc_score[1][1])
-plt.savefig("roc_task2.jpg")
+s.plot_roc(y_orig,y1,y2)
+s.plot_loss(y_orig,y1)
+"""
+

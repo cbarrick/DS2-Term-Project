@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 from keras.datasets import mnist
 import numpy
-
+from scores import Score
 
 from datasets.nuclei import NucleiLoader
 from datasets.epi import EpitheliumLoader 
@@ -70,6 +70,7 @@ class EWCTrainer:
         test_x = test_x.permute(0, 3, 1,2)
         return  self.model.predict(test_x)
 
+
     def partial_fit(self,data_x1,data_y1):
         first_data=self.train_on_task("MNIST",data_x1,data_y1)
         logger.info("Task is trained ")
@@ -78,19 +79,62 @@ class EWCTrainer:
 data_nuclei = NucleiLoader();
 trainer = EWCTrainer(2)
 
-for x, y in data_nuclei.load_train(0,batch_size=100):
-    print("on main  funcition")
-    print(x.shape)
-    print(y.shape)
-    sample_data = x.clone(),y.clone()
-    trainer.train_on_task("MNIST",x,y)
-    break;
+y1 = list();
+y2 = list();
+y_orig = list();
+
+#training task -1 without ewc
+for i in range(0,EPOCHS):
+    for x, y in data_nuclei.load_train(0,batch_size=100):
+        print("on main  funcition")
+        print(x.shape)
+        print(y.shape)
+        sample_data = x.clone(),y.clone()
+        trainer.train_on_task("TASK MAIN WITHOUT EWC",x.clone(),y.clone())
+        
+
+for x,y in data_nuclei.load_test(0,batch_size=100):
+    y1.extend(trainer.predict(x.clone()))
+    y_orig.extend(y.numpy())
+    
+
+print("----------------------Now trianing with ewc and getting metrics ---------------------------------------->")
+trainer = EWCTrainer(2)
 
 
-trainer.train_on_task_consolidate("MNIST",sample_data[0],sample_data[1])
+for i in range(0,EPOCHS):
+    for x, y in data_nuclei.load_train(0,batch_size=100):
+        trainer.train_on_task("Task1 -AD HOC TASK",x,y)
+        sample_data = x.clone(),y.clone()
+        
 
-for x, y in data_nuclei.load_train(0,batch_size=100):
-    trainer.train_on_task("Task2",x,y)
+trainer.train_on_task_consolidate("CONSLIDATE WEIGHTS",sample_data[0],sample_data[1])
+
+for i in range(0,EPOCHS):
+    for x, y in data_nuclei.load_train(0,batch_size=100):
+        print("on main  funcition")
+        print(x.shape)
+        print(y.shape)
+        sample_data = x.clone(),y.clone()
+        trainer.train_on_task("TASK-MAIN EWC TESTING TASK",x.clone(),y.clone())
+        
+
+print("recording prediction of EWC Testing task")
+
+for x,y in data_nuclei.load_test(0,batch_size=100):
+    y2.extend(trainer.predict(x.clone()))
+    print(y2)
+  
+
+s = Score();
+print("<---------------------------SCORE METRICS ----------------------------------------------------->")
+print(s.build_table(y_orig,y1,y2));
+s.plot_roc(y_orig,y1,y2)
+s.plot_loss(y_orig,y1)
+
+print("--------------------------SCORE METRIC END ----------------")
+
+
 
 
 
